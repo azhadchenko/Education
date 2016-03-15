@@ -1,0 +1,7 @@
+[37m[INFO] [0mTue Mar 15 22:22:38 2016: Process #10708, named ./a.out started logging
+[37m[INFO] [0mTue Mar 15 22:22:38 2016: Such log
+[31m[DEBUG] [0mTue Mar 15 22:22:38 2016: So useful
+[37m[INFO] [0mTue Mar 15 22:22:38 2016: SUCH DATA
+[34m[WARNING] [0mTue Mar 15 22:22:38 2016: Condition falied: 0 < -3
+[33m[ERROR] [0mTue Mar 15 22:22:38 2016: Condition failed: !!0 with msg: wow WOW
+[37m[INFO] [0mTue Mar 15 22:22:38 2016: Process #10708, named ./a.out succesfully finished logging

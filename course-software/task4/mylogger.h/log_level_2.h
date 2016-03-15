@@ -1,5 +1,3 @@
-#define MAX_BUFF 1024
-
 #define log_cond_msg(CONDITION, MSG, ...)                       \
     do {                                                        \
         char BUFF[MAX_BUFF] = {0};                              \

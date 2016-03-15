@@ -1,8 +1,8 @@
 enum LogLevel {
-    LOG_INFO = 0,
-    LOG_WARNING,
-    LOG_ERROR,
-    LOG_DEBUG
+    INFO = 0,
+    WARNING,
+    ERROR,
+    DEBUG
 };
 
 #define LOG_LEVEL_3

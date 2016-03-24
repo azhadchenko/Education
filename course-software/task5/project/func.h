@@ -1,4 +1,11 @@
 #include <iostream>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 
 int words_count = 0;
 
@@ -14,49 +21,63 @@ void reset(){
 
 int getNumberOfWords(char* path)
 {
-    if(!path && !result)
+    if(!path)
         return -1;
 
-    int fd = open("path", O_RDONLY);
+    int fd = open(path, O_RDONLY);
     if(fd == -1)
         return -1;
 
     int len = 0;
-    len = lseek(fd, NULL, SEEK_END);
-    lseek(fd, NULL, SEEK_SET);
+
+    len = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
 
     char* str = (char*)calloc(1, len);
-    if(str)
+    if(!str)
         return -1;
 
     if(read(fd, str, len) == -1)
         return -1;
 
-    char* token = strtok(str, " ");
-    int len = strlen(str);
-
     int w_count = 0;
+    char* token = 0;
 
-    while(token = strtok(NULL, " "))
-    {
-        for(int i = 0; i < strlen(token); i++)
+    token = strtok(str, " ");
+
+    do {
+
+        w_count++;
+        for(int i = 0; i < strlen(token) + 1; i++)
         {
-            if(     ((str[i] >= 'a') && (str[i] <= 'z'))
-                ||  ((str[i] >= 'A') && (str[i] <= 'Z'))
-                ||  (str[i] == '-') ) {
-            } else {
-                if(str[i] == '/0')
-                    w_count++;
 
-                if(str[i] == '/n')
-                    continue;
+            if(     ((token[i] >= 'a') && (token[i] <= 'z'))
+                ||  ((token[i] >= 'A') && (token[i] <= 'Z'))
+                ||  (token[i] == '-') ) { continue;
+            } else {
+
+                if(token[i] == '\n' || token[i] == '\0')
+                    break;
+
+                w_count--;
 
                 break;
             }
 
         }
-    }
+
+    } while (token = strtok(NULL, " "));
 
     words_count += w_count;
     return words_count;
+}
+
+int main() {
+    int a = 0;
+
+    a = getNumberOfWords("test");
+
+    printf("%d \n", a);
+
+    return 0;
 }

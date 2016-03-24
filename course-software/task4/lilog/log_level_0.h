@@ -16,8 +16,9 @@ struct Logger {
     char* ring;
     unsigned int index;
     unsigned int last_printed;
+    unsigned int last_written;
     int output_fd;
-    int flush_busy;
+    unsigned int flush_busy;
 } logger = {0};
 
 
@@ -145,6 +146,11 @@ void lilog(int loglevel, char* str, ...) {
 
     if((written > 0) && (left_len - written > 0))
         snprintf(tmp + (size_t)written, left_len - written, "\n");
+
+    while(!__sync_bool_compare_and_swap(&(logger.last_written), 0, 1))
+        nanosleep(&t, &t);
+//FIX THIS
+
 
     append_log(index);
 ;}

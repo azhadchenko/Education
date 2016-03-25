@@ -1,22 +1,7 @@
-#ifndef MAX_BUFF
-#define MAX_BUFF 512
-#endif // MAX_BUFF
-
-#ifndef BUFF_COUNT
-#define BUFF_COUNT 32
-#endif // BUFF_COUNT
-
-#ifndef FLUSH_COUNT
-#define FLUSH_COUNT 24
-#endif // FLUSH_COUNT
-
-#define LOG_LEVEL 0
-
 struct Logger {
     char* ring;
     unsigned int index;
-    unsigned int last_printed;
-    unsigned int last_written;
+    unsigned int printed_until;
     int output_fd;
     unsigned int flush_busy;
 } logger = {0};
@@ -24,6 +9,7 @@ struct Logger {
 
 unsigned int get_index() {
     int old_index = 0, index = 0;
+
     do {
         old_index = logger.index;
         index = (old_index + 1) % BUFF_COUNT;
@@ -47,13 +33,13 @@ unsigned int get_index() {
 char* get_mode(int mode) {
     switch(mode) {
     case INFO :
-        return KWHT GET_MODE_STR(INFO) RESET;
+        return KWHT GET_MODE_STR(INFO) RESET "   ";
     case WARNING :
         return KBLU GET_MODE_STR(WARNING) RESET;
     case ERROR :
-        return KYEL GET_MODE_STR(ERROR) RESET;
+        return KYEL GET_MODE_STR(ERROR) RESET "  ";
     case DEBUG :
-        return KRED GET_MODE_STR(DEBUG) RESET;
+        return KRED GET_MODE_STR(DEBUG) RESET "  ";
     default :
         return KMAG GET_MODE_STR(UNKNOWN) RESET;
     }
@@ -75,36 +61,51 @@ char* prepare_log(int message_level, unsigned int index, int* left_len) {
 
 void lilog_flush(size_t start, size_t finish);
 
-void append_log(unsigned int index) {
+#define FORCE_WRITE     1
+#define AUTOMATIC_WRITE 0
+#define FLUSH_WAIT 10000000
+
+void append_log(unsigned int index, int force) {
     int avaliable = 0;
-    int old_count = 0;
+    int old_count = logger.printed_until;
     int new_count = 0;
 
-    do {
-        old_count = logger.last_printed;
-        avaliable = (index > old_count) ? index - old_count :
-                        BUFF_COUNT - old_count + index;
+    avaliable = (index >= old_count) ? index - old_count :
+                    BUFF_COUNT - old_count + index;
 
-        if(avaliable != FLUSH_COUNT)
-            return;
+    if(!((avaliable >= FLUSH_COUNT) || force))
+        return;
 
-        new_count = (avaliable + old_count) % BUFF_COUNT;
+    struct timespec t = {0, FLUSH_WAIT};
+    while(!__sync_bool_compare_and_swap(&(logger.flush_busy), 0, 1))
+        nanosleep(&t, &t);
 
-    } while(!__sync_bool_compare_and_swap(&(logger.last_printed), old_count, new_count));
+    old_count = logger.printed_until;
+    avaliable = (index > old_count) ? index - old_count :
+                    BUFF_COUNT - old_count + index;
+
+    if(!((avaliable >= FLUSH_COUNT) || force)) {
+        logger.flush_busy = 0;
+        return;
+    }
+
+    new_count = (avaliable + old_count) % BUFF_COUNT;
+    logger.printed_until = new_count;
 
     lilog_flush(old_count, new_count);
 }
 
-#define FLUSH_WAIT 10000000
 
 void lilog_flush(size_t start, size_t until) {
     size_t sz = 0;
     int err = 0;
-    struct timespec t = {0, FLUSH_WAIT};
-    char FLUSH_BUFF[MAX_BUFF * FLUSH_COUNT] = {0};
 
-    while(!__sync_bool_compare_and_swap(&(logger.flush_busy), 0, 1))
-        nanosleep(&t, &t);
+    char* FLUSH_BUFF = (char*)calloc(1, MAX_BUFF * BUFF_COUNT);
+    if(!FLUSH_BUFF) {
+        fprintf(stderr, "Unable to allocate buffer for flushing logs. Consider logs lost");
+        logger.flush_busy = 0;
+        return;
+    }
 
     if(start <= until) {
         for(size_t i = start; i < until; i++)
@@ -123,11 +124,8 @@ void lilog_flush(size_t start, size_t until) {
     }
 
     err = write(logger.output_fd, FLUSH_BUFF, sz);
-    if(err == -1) {
+    if(err == -1)
         fprintf(stderr, "Attached logfile is dead. Unable to write into it\n");
-        logger.flush_busy = 0;
-        return;
-    }
 
     logger.flush_busy = 0;
 }
@@ -147,12 +145,8 @@ void lilog(int loglevel, char* str, ...) {
     if((written > 0) && (left_len - written > 0))
         snprintf(tmp + (size_t)written, left_len - written, "\n");
 
-    while(!__sync_bool_compare_and_swap(&(logger.last_written), 0, 1))
-        nanosleep(&t, &t);
-//FIX THIS
 
-
-    append_log(index);
+    append_log(index, AUTOMATIC_WRITE);
 ;}
 
 
@@ -196,11 +190,13 @@ void init_logger(char** argv, char* path){
 
 void lilog_finish(char** argv) {
     char buff[MAX_BUFF] = {0};
-    snprintf(buff, MAX_BUFF,  "Process #%d, named %s succesfully finished logging", getpid(), argv[0]);
+    snprintf(buff, MAX_BUFF,  "Process #%d, named %s finished logging", getpid(), argv[0]);
     lilog(INFO, buff);
 
     int index = get_index();
-    lilog_flush(logger.last_printed, index);
+    append_log(index, FORCE_WRITE);
+
+    fsync(logger.output_fd);
 
     close(logger.output_fd);
 }

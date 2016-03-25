@@ -1,9 +1,5 @@
 #define BACKTRACE_MAX 16
 
-#ifndef BACKTRACE_ENABLE
-#define BACKTRACE_ENABLE 1
-#endif // BACKTRACE_ENABLE
-
 void lilog_print_stack() {
     void* buffer[BACKTRACE_MAX] = {0};
     char** strings = 0;
@@ -24,16 +20,16 @@ void lilog_print_stack() {
             offset += snprintf(tmp + offset, left_len - offset, "%s\n", strings[i]);
 
 
-    append_log(index);
+    append_log(index, AUTOMATIC_WRITE);
 
     free(strings);
 }
 
-#define _if(CONDITION)              \
-    if(!CONDITION) {                \
-        lilog_cond(CONDITION);      \
-        if(BACKTRACE_ENABLE)        \
-            lilog_print_stack();    \
+#define _if(CONDITION)                          \
+    if(!CONDITION) {                            \
+        lilog_cond_inner(CONDITION, DEBUG);     \
+        if(BACKTRACE_ENABLE)                    \
+            lilog_print_stack();                \
     } else if(CONDITION)
 
 

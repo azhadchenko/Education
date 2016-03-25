@@ -17,8 +17,6 @@ void reset(){
     words_count = 0;
 }
 
-#define MAX_BUFF 4096
-
 int getNumberOfWords(char* path)
 {
     if(!path)
@@ -72,6 +70,7 @@ int getNumberOfWords(char* path)
     return words_count;
 }
 
+/*
 int main() {
     int a = 0;
 
@@ -81,3 +80,4 @@ int main() {
 
     return 0;
 }
+*/

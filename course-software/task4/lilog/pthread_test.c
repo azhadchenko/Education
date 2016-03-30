@@ -51,7 +51,7 @@ void* pthread_test_func(void* arg) {
 
 int main(int argc, char** argv)
 {
-    init_logger(argv, NULL);
+    init_logger(argv, argv[1]);
 
     lilog(INFO, "Such log");
     lilog(DEBUG, "So useful");
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     lilog_cond_msg(!!0, "wow %s", "WOW");
 
 
-    lilog_print_stack();
+    lilog_print_stack("Such stack");
 
 #define THREAD_NUM 10
 

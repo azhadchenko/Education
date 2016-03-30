@@ -35,11 +35,11 @@ void lilog_print_stack();
     #endif // MAX_BUFF
 
     #ifndef BUFF_COUNT
-        #define BUFF_COUNT 32
+        #define BUFF_COUNT 128
     #endif // BUFF_COUNT
 
     #ifndef FLUSH_COUNT
-        #define FLUSH_COUNT 16
+        #define FLUSH_COUNT 32
     #endif // FLUSH_COUNT
 
     #include "log_level_0.h"

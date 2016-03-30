@@ -13,19 +13,26 @@ struct Logger {
     char* ring;
     unsigned int index;
     unsigned int printed_until;
+    unsigned int last_free;
     int output_fd;
     unsigned int flush_busy;
 } logger = {0};
 
 
 unsigned int get_index() {
-    int old_index = 0, index = 0;
+    int old_index = 0, index = 0, last_free = 0;
 
-    do {
+    while(1) {
         old_index = logger.index;
+        last_free = logger.last_free;
         index = (old_index + 1) % BUFF_COUNT;
-        logger.ring[GET_CONTROL_BIT(index)] = BUSY_BUFFER;
-    } while(!__sync_bool_compare_and_swap(&(logger.index), old_index, index));
+
+        if(old_index == last_free)
+            continue;
+
+        if(__sync_bool_compare_and_swap(&(logger.index), old_index, index))
+            break;
+    }
 
     return old_index;
 }
@@ -87,17 +94,9 @@ void append_log(unsigned int index, int force) {
 #define CALC_AVALIBALE()    (index >= old_count) ? index - old_count : \
                             BUFF_COUNT - old_count + index
 
-    avaliable = CALC_AVALIBALE();
-
-    if(!((avaliable >= FLUSH_COUNT) || force))
-        return;
-
 #define InRange \
   ( (last_given > old_count) ?  (index > old_count && index < last_given) : \
                                 (index > old_count || index < last_given) )
-
-    if(!InRange)
-        return;
 
     do {
 
@@ -106,13 +105,27 @@ void append_log(unsigned int index, int force) {
         last_given = logger.index;
 
 
-        if(!((avaliable >= FLUSH_COUNT) || force))
+        if(!((avaliable > FLUSH_COUNT) || force))
             return;
 
         if(!InRange)
             return;
 
     } while(!__sync_bool_compare_and_swap(&(logger.flush_busy), 0, 1));
+
+    old_count = logger.printed_until;
+    avaliable = CALC_AVALIBALE();
+    last_given = logger.index;
+
+    if(!((avaliable > FLUSH_COUNT) || force)) {
+        logger.flush_busy = 0;
+        return;
+    }
+
+    if(!InRange) {
+        logger.flush_busy = 0;
+        return;
+    }
 
     new_count = (avaliable + old_count) % BUFF_COUNT;
     logger.printed_until = new_count;
@@ -132,9 +145,13 @@ void lilog_flush(size_t start, size_t until) {
         return;
     }
 
+
     if(start <= until) {
         for(size_t i = start; i < until; i++) {
             while(logger.ring[GET_CONTROL_BIT(i)] == BUSY_BUFFER);   //Little spin-lock. Flushing func waits all buffers to be written
+
+
+            logger.ring[GET_CONTROL_BIT(i)] = BUSY_BUFFER;
 
             sz += snprintf(FLUSH_BUFF + sz, MAX_BUFF,
                              logger.ring + i * TRUE_BUFF_SIZE);
@@ -144,12 +161,19 @@ void lilog_flush(size_t start, size_t until) {
         for(size_t i = start; i < BUFF_COUNT; i++) {
             while(logger.ring[GET_CONTROL_BIT(i)] == BUSY_BUFFER);   //Little spin-lock. Flushing func waits all buffers to be written
 
+
+            logger.ring[GET_CONTROL_BIT(i)] = BUSY_BUFFER;
+
             sz += snprintf(FLUSH_BUFF + sz, MAX_BUFF,
                              logger.ring + i * TRUE_BUFF_SIZE);
         }
 
+
         for(size_t i = 0; i < until; i++) {
             while(logger.ring[GET_CONTROL_BIT(i)] == BUSY_BUFFER);   //Little spin-lock. Flushing func waits all buffers to be written
+
+
+            logger.ring[GET_CONTROL_BIT(i)] = BUSY_BUFFER;
 
             sz += snprintf(FLUSH_BUFF + sz, MAX_BUFF,
                              logger.ring + i * TRUE_BUFF_SIZE);
@@ -161,12 +185,16 @@ void lilog_flush(size_t start, size_t until) {
         fprintf(stderr, "Attached logfile is dead. Unable to write into it\n");
 
 
-
+    logger.last_free = until;
     logger.flush_busy = 0;
     free(FLUSH_BUFF);
 }
 
 void lilog(int loglevel, char* str, ...) {
+
+    if(logger.ring == NULL)
+        return;
+
     int left_len = 0;
     int written = 0;
     va_list ap;
@@ -181,7 +209,6 @@ void lilog(int loglevel, char* str, ...) {
         snprintf(tmp + (size_t)written, left_len - written, "\n");
 
     logger.ring[GET_CONTROL_BIT(index)] = WRITTEN_BUFFER;
-
 
     append_log(index, AUTOMATIC_WRITE);
 ;}
@@ -198,8 +225,16 @@ void hello_msg(char** argv) {
 void init_logger(char** argv, char* path){
     char BUFF[MAX_BUFF] = {0};
 
-    logger.ring = (char*)calloc(sizeof(char), TRUE_BUFF_SIZE * BUFF_COUNT);
+    logger.last_free = BUFF_COUNT - 1;
 
+    logger.ring = (char*)calloc(sizeof(char), TRUE_BUFF_SIZE * BUFF_COUNT);
+    if(logger.ring == NULL) {
+        fprintf(stderr, "Unable to allocate buffer. Out of memory. Logging disabled \n");
+        return;
+    }
+
+
+    for(int i = 0; i < BUFF_COUNT; logger.ring[GET_CONTROL_BIT(i++)] = BUSY_BUFFER);
 
     if(path) {
         logger.output_fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 00666);
@@ -227,6 +262,10 @@ void init_logger(char** argv, char* path){
 }
 
 void lilog_finish(char** argv) {
+
+    if(logger.ring == NULL)
+        return;
+
     char buff[MAX_BUFF] = {0};
     snprintf(buff, MAX_BUFF,  "Process #%d, named %s finished logging", getpid(), argv[0]);
     lilog(INFO, buff);

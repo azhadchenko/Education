@@ -82,6 +82,7 @@ void append_log(unsigned int index, int force) {
     int avaliable = 0;
     int old_count = logger.printed_until;
     int new_count = 0;
+    int last_given = logger.index;
 
 #define CALC_AVALIBALE()    (index >= old_count) ? index - old_count : \
                             BUFF_COUNT - old_count + index
@@ -91,16 +92,25 @@ void append_log(unsigned int index, int force) {
     if(!((avaliable >= FLUSH_COUNT) || force))
         return;
 
+#define InRange \
+  ( (last_given > old_count) ?  (index > old_count && index < last_given) : \
+                                (index > old_count || index < last_given) )
+
+    if(!InRange)
+        return;
 
     do {
 
         old_count = logger.printed_until;
         avaliable = CALC_AVALIBALE();
+        last_given = logger.index;
 
-        if(!((avaliable >= FLUSH_COUNT) || force)) {
-            logger.flush_busy = 0;
+
+        if(!((avaliable >= FLUSH_COUNT) || force))
             return;
-        }
+
+        if(!InRange)
+            return;
 
     } while(!__sync_bool_compare_and_swap(&(logger.flush_busy), 0, 1));
 
@@ -121,8 +131,6 @@ void lilog_flush(size_t start, size_t until) {
         logger.flush_busy = 0;
         return;
     }
-
-    printf("%d %d \n", start, until);
 
     if(start <= until) {
         for(size_t i = start; i < until; i++) {
@@ -151,6 +159,8 @@ void lilog_flush(size_t start, size_t until) {
     err = write(logger.output_fd, FLUSH_BUFF, sz);
     if(err == -1)
         fprintf(stderr, "Attached logfile is dead. Unable to write into it\n");
+
+
 
     logger.flush_busy = 0;
     free(FLUSH_BUFF);

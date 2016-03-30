@@ -31,7 +31,8 @@ void call0() {
 };
 
 struct TestStruct {
-    pthread_t num;
+    pthread_t id;
+    int num;
 };
 
 void* pthread_test_func(void* arg) {
@@ -65,12 +66,13 @@ int main(int argc, char** argv)
 
     struct TestStruct* tinfo = (struct TestStruct*)calloc(sizeof(struct TestStruct), THREAD_NUM);
 
-    for(int i = 0; i < THREAD_NUM; i++)
-        pthread_create(&tinfo[i].num, NULL, &pthread_test_func, &tinfo[i]);
+    for(int i = 0; i < THREAD_NUM; i++) {
+        tinfo[i].num = i;
+        pthread_create(&tinfo[i].id, NULL, &pthread_test_func, &tinfo[i]);
+    }
 
-
     for(int i = 0; i < THREAD_NUM; i++)
-        pthread_join(tinfo[i].num, NULL);
+        pthread_join(tinfo[i].id, NULL);
 
     lilog_finish(argv);
 

@@ -20,6 +20,7 @@ void lilog_print_stack() {
             offset += snprintf(tmp + offset, left_len - offset, "%s\n", strings[i]);
 
 
+    logger.ring[GET_CONTROL_BIT(index)] = WRITTEN_BUFFER;
     append_log(index, AUTOMATIC_WRITE);
 
     free(strings);

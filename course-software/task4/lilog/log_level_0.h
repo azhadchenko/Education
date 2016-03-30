@@ -1,3 +1,14 @@
+//Next defines represent not clear shitty lov-level hardcoded solution of problem
+//when someone tryes to flush chunk of buffers, while some of the buffers still not fromed yet
+//For this reason, there are allocated 1 more control byte at the end of each buffer
+//In formed state that byte is 0, so it wont affect any string inside buffer
+
+#define TRUE_BUFF_SIZE (MAX_BUFF + 1)
+#define GET_CONTROL_BIT(index)  (TRUE_BUFF_SIZE * (index + 1) - 1)
+
+#define BUSY_BUFFER 1
+#define WRITTEN_BUFFER 0
+
 struct Logger {
     char* ring;
     unsigned int index;
@@ -13,6 +24,7 @@ unsigned int get_index() {
     do {
         old_index = logger.index;
         index = (old_index + 1) % BUFF_COUNT;
+        logger.ring[GET_CONTROL_BIT(index)] = BUSY_BUFFER;
     } while(!__sync_bool_compare_and_swap(&(logger.index), old_index, index));
 
     return old_index;
@@ -46,11 +58,12 @@ char* get_mode(int mode) {
 }
 
 char* prepare_log(int message_level, unsigned int index, int* left_len) {
-    size_t offset = index * MAX_BUFF;
+    size_t offset = index * TRUE_BUFF_SIZE;
     time_t t = {0};
     unsigned int written = 0;
 
     time(&t); //need to profile it
+
     written = snprintf((logger.ring + offset), MAX_BUFF, "%s%.24s: ", get_mode(message_level), ctime(&t));
     //Whoops, 24 is hardcoded - its the length of ctime() without \n\0
 
@@ -70,24 +83,26 @@ void append_log(unsigned int index, int force) {
     int old_count = logger.printed_until;
     int new_count = 0;
 
-    avaliable = (index >= old_count) ? index - old_count :
-                    BUFF_COUNT - old_count + index;
+#define CALC_AVALIBALE()    (index >= old_count) ? index - old_count : \
+                            BUFF_COUNT - old_count + index
+
+    avaliable = CALC_AVALIBALE();
 
     if(!((avaliable >= FLUSH_COUNT) || force))
         return;
 
-    struct timespec t = {0, FLUSH_WAIT};
-    while(!__sync_bool_compare_and_swap(&(logger.flush_busy), 0, 1))
-        nanosleep(&t, &t);
 
-    old_count = logger.printed_until;
-    avaliable = (index > old_count) ? index - old_count :
-                    BUFF_COUNT - old_count + index;
+    do {
 
-    if(!((avaliable >= FLUSH_COUNT) || force)) {
-        logger.flush_busy = 0;
-        return;
-    }
+        old_count = logger.printed_until;
+        avaliable = CALC_AVALIBALE();
+
+        if(!((avaliable >= FLUSH_COUNT) || force)) {
+            logger.flush_busy = 0;
+            return;
+        }
+
+    } while(!__sync_bool_compare_and_swap(&(logger.flush_busy), 0, 1));
 
     new_count = (avaliable + old_count) % BUFF_COUNT;
     logger.printed_until = new_count;
@@ -107,20 +122,30 @@ void lilog_flush(size_t start, size_t until) {
         return;
     }
 
+    printf("%d %d \n", start, until);
+
     if(start <= until) {
-        for(size_t i = start; i < until; i++)
+        for(size_t i = start; i < until; i++) {
+            while(logger.ring[GET_CONTROL_BIT(i)] == BUSY_BUFFER);   //Little spin-lock. Flushing func waits all buffers to be written
+
             sz += snprintf(FLUSH_BUFF + sz, MAX_BUFF,
-                             logger.ring + i * MAX_BUFF);
+                             logger.ring + i * TRUE_BUFF_SIZE);
+        }
     }
     else {
-        for(size_t i = start; i < BUFF_COUNT; i++)
-            sz += snprintf(FLUSH_BUFF + sz, MAX_BUFF,
-                             logger.ring + i * MAX_BUFF);
+        for(size_t i = start; i < BUFF_COUNT; i++) {
+            while(logger.ring[GET_CONTROL_BIT(i)] == BUSY_BUFFER);   //Little spin-lock. Flushing func waits all buffers to be written
 
-        for(size_t i = 0; i < until; i++)
             sz += snprintf(FLUSH_BUFF + sz, MAX_BUFF,
-                             logger.ring + i * MAX_BUFF);
+                             logger.ring + i * TRUE_BUFF_SIZE);
+        }
 
+        for(size_t i = 0; i < until; i++) {
+            while(logger.ring[GET_CONTROL_BIT(i)] == BUSY_BUFFER);   //Little spin-lock. Flushing func waits all buffers to be written
+
+            sz += snprintf(FLUSH_BUFF + sz, MAX_BUFF,
+                             logger.ring + i * TRUE_BUFF_SIZE);
+        }
     }
 
     err = write(logger.output_fd, FLUSH_BUFF, sz);
@@ -128,6 +153,7 @@ void lilog_flush(size_t start, size_t until) {
         fprintf(stderr, "Attached logfile is dead. Unable to write into it\n");
 
     logger.flush_busy = 0;
+    free(FLUSH_BUFF);
 }
 
 void lilog(int loglevel, char* str, ...) {
@@ -137,13 +163,14 @@ void lilog(int loglevel, char* str, ...) {
     unsigned int index = get_index();
     char* tmp = prepare_log(loglevel, index, &left_len);
 
-
     va_start(ap, str);
     written = vsnprintf(tmp, left_len, str, ap);
     va_end(ap);
 
     if((written > 0) && (left_len - written > 0))
         snprintf(tmp + (size_t)written, left_len - written, "\n");
+
+    logger.ring[GET_CONTROL_BIT(index)] = WRITTEN_BUFFER;
 
 
     append_log(index, AUTOMATIC_WRITE);
@@ -161,7 +188,8 @@ void hello_msg(char** argv) {
 void init_logger(char** argv, char* path){
     char BUFF[MAX_BUFF] = {0};
 
-    logger.ring = (char*)calloc(sizeof(char), MAX_BUFF * BUFF_COUNT);
+    logger.ring = (char*)calloc(sizeof(char), TRUE_BUFF_SIZE * BUFF_COUNT);
+
 
     if(path) {
         logger.output_fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 00666);
@@ -197,6 +225,6 @@ void lilog_finish(char** argv) {
     append_log(index, FORCE_WRITE);
 
     fsync(logger.output_fd);
-
     close(logger.output_fd);
+    free(logger.ring);
 }

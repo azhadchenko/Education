@@ -1,10 +1,10 @@
-#define lilog_cond(CONDITION) lilog_cond_inner(CONDITION, WARNING)
 
-#define lilog_cond_inner(CONDITION, LEVEL)                              \
+
+#define lilog_cond(CONDITION)			                        \
     do {                                                                \
         if(CONDITION)                                                   \
             break;                                                      \
-        lilog(LEVEL, "Condition falied: " #CONDITION);                  \
+        lilog(WARNING, "Condition falied: " #CONDITION);                \
     } while(0)
 
 

@@ -1,0 +1,46 @@
+        -:    0:Source:main.c
+        -:    0:Graph:main.gcno
+        -:    0:Data:main.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <unistd.h>
+        -:    4:
+        -:    5:
+        -:    6:#include "hashfunc.h"
+        -:    7:#include "hash_table.h"
+        -:    8:
+    #####:    9:int compare(void* item1, void* item2) {
+    #####:   10:    return 1;
+        -:   11:}
+        -:   12:
+        -:   13:struct Item {
+        -:   14:    int item;
+        -:   15:};
+        -:   16:
+    10005:   17:int get_sign(void* item) {
+    10005:   18:    return ((struct Item*)item) -> item;
+        -:   19:}
+        -:   20:
+        -:   21:
+        1:   22:int main()
+        -:   23:{
+        1:   24:    struct Item data[10000] = {0};
+        -:   25:
+        -:   26:
+        1:   27:    struct HashTable* table = Hash_init(101, &hash_func, &get_sign);
+        -:   28:
+    10001:   29:    for(int i = 0; i < 10000; i++) {
+    10000:   30:        data[i].item = i;
+    10000:   31:        add_item(table, &data[i]);
+        -:   32:    }
+        -:   33:
+        6:   34:    for(int i = 0; i < 5; i++)
+        5:   35:        add_item(table, &data[i]);
+        -:   36:
+        1:   37:    Hash_destruct(table);
+        -:   38:
+        1:   39:    printf("Success \n");
+        1:   40:    return 0;
+        -:   41:}

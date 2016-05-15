@@ -1,0 +1,15 @@
+# depslib dependency file v1.0
+1460054818 source:/home/andrew/Documents/git/Education/course-software/task4/hashtable/hashtable/main.c
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	"hashfunc.h"
+	"hash_table.h"
+
+1460054844 /home/andrew/Documents/git/Education/course-software/task4/hashtable/hashtable/hash_table.h
+
+1460053467 /home/andrew/Documents/git/Education/course-software/task4/hashtable/hashtable/hashfunc.h
+	<stdio.h>
+	<stdlib.h>
+	<stdint.h>
+

@@ -1,0 +1,173 @@
+        -:    0:Source:hash_table.h
+        -:    0:Graph:main.gcno
+        -:    0:Data:main.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#define ERROR(MESSAGE, type) \
+        -:    2:            do { fprintf(stderr, MESSAGE "\n"); return (type)-1;} while(0)
+        -:    3:
+        -:    4:enum CONSTS {
+        -:    5:    ALREADY_EXIST = -1,
+        -:    6:    HEAD = -1
+        -:    7:};
+        -:    8:
+        -:    9:struct Node {
+        -:   10:    struct Node* previous;
+        -:   11:    struct Node* next;
+        -:   12:    void* item;
+        -:   13:};
+        -:   14:
+    10000:   15:struct Node* node_init(void* value) {
+        -:   16:
+    10000:   17:    struct Node* node = (struct Node*)calloc(1, sizeof(struct Node));
+    10000:   18:    if(!node)
+    #####:   19:        ERROR("Out of memory", void*);
+        -:   20:
+    10000:   21:    node -> item = value;
+        -:   22:
+    10000:   23:    return node;
+        -:   24:}
+        -:   25:
+     9950:   26:int node_add(struct Node* current, struct Node* item) {
+        -:   27:
+     9950:   28:    if(!current || !item)
+    #####:   29:        return 0;
+        -:   30:
+    19900:   31:    while(current -> next)
+    #####:   32:        current = current -> next;
+        -:   33:
+     9950:   34:    current -> next = item;
+     9950:   35:    item -> previous = current;
+        -:   36:
+     9950:   37:    return 0;
+        -:   38:}
+        -:   39:
+     9955:   40:struct Node* search_node(struct Node* current, void* item) {
+        -:   41:
+     9955:   42:    if(!current || !item)
+    #####:   43:        return 0;
+        -:   44:
+  1346325:   45:    while(current -> item != item) {
+  1336365:   46:        if(!(current -> next))
+     9950:   47:            break;
+        -:   48:
+  1326415:   49:        current = current -> next;
+        -:   50:    }
+        -:   51:
+     9955:   52:    return current;
+        -:   53:}
+        -:   54:
+    #####:   55:int node_destroy(struct Node* node) {
+        -:   56:
+    #####:   57:    if(!node)
+    #####:   58:        return 0;
+        -:   59:
+        -:   60:
+    #####:   61:    if(node -> previous != (void*)HEAD && node -> previous != 0)
+    #####:   62:        node -> previous -> next = node -> next;
+        -:   63:
+    #####:   64:    if(node -> next)
+    #####:   65:        node -> next -> previous = node -> previous;
+        -:   66:
+    #####:   67:    free(node);
+        -:   68:
+    #####:   69:    return 0;
+        -:   70:}
+        -:   71:
+        -:   72:
+        -:   73:
+    10050:   74:int node_destroy_recursive(struct Node* node) {
+        -:   75:
+    10050:   76:    if(!node)
+       50:   77:        return 0;
+        -:   78:
+    10000:   79:    node_destroy_recursive(node -> next);
+        -:   80:
+    10000:   81:    free(node);
+        -:   82:
+    10000:   83:    return 0;
+        -:   84:}
+        -:   85:
+        -:   86:
+        -:   87:struct HashTable{
+        -:   88:    int table_size;
+        -:   89:    struct Node** lists;
+        -:   90:    uint32_t (*hash_func)(int);
+        -:   91:    int (*get_signature)(void*);
+        -:   92:};
+        -:   93:
+        1:   94:struct HashTable* Hash_init(int table_size,
+        -:   95:                     uint32_t (*hash_func)(int), int (*get_signature)(void*) ) {
+        -:   96:
+        1:   97:    if(!hash_func || !get_signature)
+    #####:   98:        ERROR("Incorrect arguments", void*);
+        -:   99:
+        1:  100:    struct HashTable* table = (struct HashTable*)calloc(1, sizeof(struct HashTable));
+        1:  101:    if(!table)
+    #####:  102:        ERROR("Out of memory", void*);
+        -:  103:
+        1:  104:    table -> lists = (struct Node**)calloc(table_size, sizeof(struct Node*));
+        1:  105:    if(!table -> lists) {
+    #####:  106:        free(table);
+    #####:  107:        ERROR("Out of memory", void*);
+        -:  108:    }
+        -:  109:
+        1:  110:    table -> hash_func = hash_func;
+        1:  111:    table -> get_signature = get_signature;
+        1:  112:    table -> table_size = table_size;
+        -:  113:
+        1:  114:    return table;
+        -:  115:}
+        -:  116:
+        1:  117:int Hash_destruct(struct HashTable* table) {
+        -:  118:
+        1:  119:    if(!table)
+    #####:  120:        ERROR("Null pointer encountered", int);
+        -:  121:
+        1:  122:    if(!table -> lists) {
+    #####:  123:        free(table);
+    #####:  124:        ERROR("Damaged hashtable found, destroyed", int);
+        -:  125:    }
+        -:  126:
+      102:  127:    for(int i = 0; i < table -> table_size; i++) {
+      101:  128:        if(table -> lists[i])
+       50:  129:            node_destroy_recursive(table -> lists[i]);
+        -:  130:    }
+        -:  131:
+        1:  132:    return 0;
+        -:  133:}
+        -:  134:
+    10005:  135:int add_item(struct HashTable* table, void* item) {
+        -:  136:
+    10005:  137:    int hash = 0;
+    10005:  138:    int tmp = 0;
+    10005:  139:    struct Node* new_item = 0;
+    10005:  140:    struct Node* search_res = 0;
+        -:  141:
+    10005:  142:    if(!table || !item)
+    #####:  143:        ERROR("Null pointer encountered", int);
+        -:  144:
+    10005:  145:    hash = table -> hash_func(table -> get_signature(item));
+        -:  146:
+    10005:  147:    tmp = hash % table -> table_size;
+        -:  148:
+    10005:  149:    if(!table -> lists[tmp]) {
+       50:  150:        new_item = node_init(item);
+       50:  151:        if(new_item == (void*)-1)
+    #####:  152:            return -1;
+        -:  153:
+       50:  154:        table -> lists[tmp] = new_item;
+       50:  155:        return 0;
+        -:  156:    }
+        -:  157:
+     9955:  158:    search_res = search_node(table -> lists[tmp], item);
+     9955:  159:    if(search_res -> item != item) {
+     9950:  160:        new_item = node_init(item);
+     9950:  161:        if(new_item == (void*)-1)
+    #####:  162:            return -1;
+        -:  163:
+     9950:  164:        node_add(search_res, new_item);
+     9950:  165:        return 0;
+        -:  166:    } else
+        5:  167:        return ALREADY_EXIST;
+        -:  168:}

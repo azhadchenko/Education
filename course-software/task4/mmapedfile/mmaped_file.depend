@@ -1,0 +1,23 @@
+# depslib dependency file v1.0
+1461248128 source:/home/andrew/Documents/git/Education/course-software/task4/mmapedfile/mmaped_file.c
+	<stdio.h>
+	<stdlib.h>
+	<sys/mman.h>
+	<sys/stat.h>
+	<stdlib.h>
+	<fcntl.h>
+	<sys/types.h>
+	<assert.h>
+	<unistd.h>
+	<errno.h>
+	<string.h>
+	"inner_api.h"
+
+1461249135 /home/andrew/Documents/git/Education/course-software/task4/mmapedfile/inner_api.h
+	"mapped_file.h"
+
+1461243429 /home/andrew/Documents/git/Education/course-software/task4/mmapedfile/mapped_file.h
+	<errno.h>
+	<stddef.h>
+	<sys/types.h>
+

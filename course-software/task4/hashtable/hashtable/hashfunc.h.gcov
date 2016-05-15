@@ -1,0 +1,27 @@
+        -:    0:Source:hashfunc.h
+        -:    0:Graph:main.gcno
+        -:    0:Data:main.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <stdint.h>
+        -:    4:
+    10005:    5:uint32_t hash_func(int input)
+        -:    6:{
+        -:    7:    //middle-square
+        -:    8:
+        -:    9:#define MAGIC_NUMBER 3779
+        -:   10:
+    10005:   11:    uint32_t result = ((uint32_t)input) * MAGIC_NUMBER;
+        -:   12:
+   110055:   13:    for(int i = 0; i < 10; i++) {
+   100050:   14:        if(result < 10000)
+    90051:   15:            result *= MAGIC_NUMBER;
+        -:   16:
+   100050:   17:        result = result * result;
+   100050:   18:        result = (result % 10000000) / 10000;
+        -:   19:    }
+        -:   20:
+    10005:   21:    return result * result;
+        -:   22:}

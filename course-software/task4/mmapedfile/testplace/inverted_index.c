@@ -37,7 +37,7 @@ struct Ii_manager {
     size_t block_max;
 };
 
-#define INIT_BLOCK_COUNT 16
+#define INIT_BLOCK_COUNT 2
 
 struct Ii_manager* init_ii_m(){
 
@@ -243,7 +243,7 @@ ssize_t delete_item(struct Inverted_index* ii, void* item, size_t start, size_t 
     return until - start;
 }
 
-/*
+
 int main(){
     struct Inverted_index* ii = init_ii(256);
 
@@ -278,4 +278,3 @@ int main(){
 
     assert(!destruct_ii(ii));
 }
-/*

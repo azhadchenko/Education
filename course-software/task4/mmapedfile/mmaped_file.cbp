@@ -42,12 +42,16 @@
 		<Unit filename="chunk_manager.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="inner_api.h" />
+		<Unit filename="chunk_manager.h" />
 		<Unit filename="inverted_index.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="inverted_index.h" />
 		<Unit filename="mapped_file.h" />
 		<Unit filename="mmaped_file.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="test.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Extensions>

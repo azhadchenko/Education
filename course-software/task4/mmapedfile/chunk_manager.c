@@ -10,36 +10,7 @@
 #include <errno.h>
 #include <string.h>
 
-
-enum State {
-    EMPTY = 0,
-    READY = 1,
-    BUSY = 2
-};
-
-struct Chunk {
-    void* ptr;
-    off_t offset;
-    size_t size;
-    size_t state;
-    size_t refcount;
-};
-
-struct Spool {
-    unsigned char count;
-    struct Chunk data[0];
-};
-
-struct Pool {
-    struct Spool** data;
-
-    unsigned char spool_size;
-    int spool_count;
-    int spool_max;
-};
-
-
-#define INIT_SPOOL_COUNT 1
+#include "chunk_manager.h"
 
 struct Pool* init_pool(){
 
@@ -52,13 +23,13 @@ struct Pool* init_pool(){
     size_t size = spool_size * sizeof(struct Chunk) + sizeof(struct Spool) + sizeof(struct Pool);
     struct Pool* pool = (struct Pool*)calloc(1, size);
     if(!pool)
-        return (void*)-1;
+        return 0;
 
 
     pool -> data = (struct Spool**)calloc(sizeof(void*), INIT_SPOOL_COUNT);
     if(!pool -> data) {
         free(pool);
-        return (void*)-1;
+        return 0;
     }
 
     pool -> spool_size = spool_size;
@@ -92,8 +63,8 @@ struct Chunk* allocate_chunk(struct Pool* pool, void* ptr, off_t offset, size_t 
         struct Chunk* tmp = pool -> data[i] -> data;
 
         for(int j = 0; j < pool -> spool_size; j++) {
-            if(tmp[j].state == EMPTY) {
-                tmp[j].state = BUSY;
+            if(tmp[j].state == EMPTYCM) {
+                tmp[j].state = READYCM;
                 tmp[j].refcount++;
 
                 tmp[j].ptr = ptr;
@@ -101,6 +72,7 @@ struct Chunk* allocate_chunk(struct Pool* pool, void* ptr, off_t offset, size_t 
                 tmp[j].size = size;
 
                 pool -> data[i] -> count++;
+
 
                 return &tmp[j];
             }
@@ -151,11 +123,11 @@ ssize_t deref_chunk(struct Pool* pool, struct Chunk* item) {
         size_t top = (size_t)(pool -> data[i] -> data + pool -> spool_size) - (size_t)item;
 
         if(bottom <= pool -> spool_size * sizeof(struct Chunk) && top <= pool -> spool_size * sizeof(struct Chunk)) {
-            item -> state = BUSY;
+            item -> state = BUSYCM;
             item -> refcount--;
 
             pool -> data[i] -> count--;
-            item -> state = EMPTY;
+            item -> state = EMPTYCM;
 
             return 0;
         }
@@ -163,6 +135,8 @@ ssize_t deref_chunk(struct Pool* pool, struct Chunk* item) {
 
     return -1;
 }
+
+/*
 
 int main(){ //Such mini test, wow. Such works, so coverage
     struct Pool* pool = init_pool();
@@ -194,3 +168,4 @@ int main(){ //Such mini test, wow. Such works, so coverage
 
     destruct_pool(pool);
 }
+ */

@@ -10,34 +10,7 @@
 #include <errno.h>
 #include <string.h>
 
-
-enum State {
-    EMPTY = 0,
-    READY = 1,
-    BUSY = 2
-};
-
-struct Ii_element {
-    void* item;
-    size_t pos_inside;
-    struct Ii_element* next;
-    size_t state;
-};
-
-struct Block {
-    size_t count;
-    struct Ii_element data[0];
-};
-
-struct Ii_manager {
-    struct Block** data;
-
-    unsigned char block_size;
-    size_t block_count;
-    size_t block_max;
-};
-
-#define INIT_BLOCK_COUNT 16
+#include "inverted_index.h"
 
 struct Ii_manager* init_ii_m(){
 
@@ -50,13 +23,13 @@ struct Ii_manager* init_ii_m(){
     size_t size = block_size * sizeof(struct Ii_element) + sizeof(struct Block) + sizeof(struct Ii_manager);
     struct Ii_manager* manager = (struct Ii_manager*)calloc(1, size);
     if(!manager)
-        return (void*)-1;
+        return 0;
 
 
     manager -> data = (struct Block**)calloc(sizeof(void*), INIT_BLOCK_COUNT);
     if(!manager -> data) {
         free(manager);
-        return (void*)-1;
+        return 0;
     }
 
     manager -> block_size = block_size;
@@ -90,7 +63,7 @@ struct Ii_element* allocate_element(struct Ii_manager* manager, void* item, size
         struct Ii_element* tmp = manager -> data[i] -> data;
 
         for(int j = 0; j < manager -> block_size; j++) {
-            if(tmp[j].state == EMPTY) {
+            if(tmp[j].state == EMPTYII) {
 
                 tmp[j].item = item;
                 tmp[j].pos_inside = pos_inside;
@@ -98,7 +71,7 @@ struct Ii_element* allocate_element(struct Ii_manager* manager, void* item, size
 
                 manager -> data[i] -> count++;
 
-                tmp[j].state = READY;
+                tmp[j].state = READYII;
 
                 return &tmp[j];
             }
@@ -146,7 +119,7 @@ ssize_t destruct_element(struct Ii_manager* manager, struct Ii_element* item) {
 
         if(bottom <= manager -> block_size * sizeof(struct Ii_element) && top <= manager -> block_size * sizeof(struct Ii_element)) {
             manager -> data[i] -> count--;
-            item -> state = EMPTY;
+            item -> state = EMPTYII;
 
 
             return 0;
@@ -156,10 +129,6 @@ ssize_t destruct_element(struct Ii_manager* manager, struct Ii_element* item) {
     return -1;
 }
 
-struct Inverted_index {
-    struct Ii_manager* manager;
-    struct Ii_element* data[0];
-};
 
 struct Inverted_index* init_ii(size_t size) {
 
@@ -278,4 +247,4 @@ int main(){
 
     assert(!destruct_ii(ii));
 }
-/*
+*/

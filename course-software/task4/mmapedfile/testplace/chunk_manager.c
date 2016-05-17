@@ -80,7 +80,7 @@ ssize_t destruct_pool(struct Pool* pool) {
     return 0;
 }
 
-struct Chunk* allocate_chunk(struct Pool* pool){
+struct Chunk* allocate_chunk(struct Pool* pool, void* ptr, off_t offset, size_t size){
     if(!pool)
         return 0;
 
@@ -95,6 +95,10 @@ struct Chunk* allocate_chunk(struct Pool* pool){
             if(tmp[j].state == EMPTY) {
                 tmp[j].state = BUSY;
                 tmp[j].refcount++;
+
+                tmp[j].ptr = ptr;
+                tmp[j].offset = offset;
+                tmp[j].size = size;
 
                 pool -> data[i] -> count++;
 
@@ -130,23 +134,28 @@ struct Chunk* allocate_chunk(struct Pool* pool){
 
     free(free_candidate); //Actually this can be a real problem if someone is handling previous pool -> data
 
-    return allocate_chunk(pool);
+    return allocate_chunk(pool, ptr, offset, size);
 }
 
 ssize_t deref_chunk(struct Pool* pool, struct Chunk* item) {
     if(!pool || !item)
         return -1;
 
+    if(!item -> refcount) {
+        item -> refcount--;
+        return item -> refcount;
+    }
+
     for(int i = 0; i < pool -> spool_count; i++) {
         size_t bottom = (size_t)item - (size_t)(pool -> data[i] -> data);
         size_t top = (size_t)(pool -> data[i] -> data + pool -> spool_size) - (size_t)item;
 
         if(bottom <= pool -> spool_size * sizeof(struct Chunk) && top <= pool -> spool_size * sizeof(struct Chunk)) {
+            item -> state = BUSY;
             item -> refcount--;
-            if(!item -> refcount) {
-                pool -> data[i] -> count--;
-                item -> state = EMPTY;
-            }   else {item -> state = READY;}
+
+            pool -> data[i] -> count--;
+            item -> state = EMPTY;
 
             return 0;
         }
@@ -155,34 +164,30 @@ ssize_t deref_chunk(struct Pool* pool, struct Chunk* item) {
     return -1;
 }
 
-
-int main(){ //Such test, wow
+int main(){ //Such mini test, wow. Such works, so coverage
     struct Pool* pool = init_pool();
 
     printf("Passed init \n");
 
     struct Chunk* array[256] = {0};
-    for(int i = 0; i < 80; i++) {
-        array[i] = allocate_chunk(pool);
+    for(size_t i = 0; i < 80; i++) {
+        array[i] = allocate_chunk(pool, (void*)i, i, i);
         if(array[i] == (void*)-1) {
             printf("WTF \n");
             exit(0);
         }
-        array[i] -> state = READY;
     }
 
     printf("Passed allocation \n");
 
-    for(int i = 0; i < 80; i++) {
-        array[i] -> state = BUSY;
+    for(size_t i = 0; i < 80; i++) {
         deref_chunk(pool, array[i]);
     }
 
     printf("Passed dereference \n");
 
-    for(int i = 0; i < 80; i++) {
-        array[i] = allocate_chunk(pool);
-        array[i] -> state = READY;
+    for(size_t i = 0; i < 80; i++) {
+        array[i] = allocate_chunk(pool, (void*)(i + 80), i + 80, i+ 80);
     }
 
     printf("Passed 2nd allocation \n");

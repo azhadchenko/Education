@@ -85,7 +85,7 @@
         1:   80:    return 0;
         -:   81:}
         -:   82:
-      161:   83:struct Chunk* allocate_chunk(struct Pool* pool){
+      161:   83:struct Chunk* allocate_chunk(struct Pool* pool, void* ptr, off_t offset, size_t size){
       161:   84:    if(!pool)
     #####:   85:        return 0;
         -:   86:
@@ -101,96 +101,101 @@
       160:   96:                tmp[j].state = BUSY;
       160:   97:                tmp[j].refcount++;
         -:   98:
-      160:   99:                pool -> data[i] -> count++;
-        -:  100:
-      160:  101:                return &tmp[j];
-        -:  102:            }
-        -:  103:
-        -:  104:        }
-        -:  105:    }
-        -:  106:
-        -:  107:    //actions if all spools are full
-        -:  108:
-        1:  109:    void* free_candidate = 0;
+      160:   99:                tmp[j].ptr = ptr;
+      160:  100:                tmp[j].offset = offset;
+      160:  101:                tmp[j].size = size;
+        -:  102:
+      160:  103:                pool -> data[i] -> count++;
+        -:  104:
+      160:  105:                return &tmp[j];
+        -:  106:            }
+        -:  107:
+        -:  108:        }
+        -:  109:    }
         -:  110:
-        1:  111:    if(pool -> spool_count == pool -> spool_max) {
+        -:  111:    //actions if all spools are full
         -:  112:
-        1:  113:        struct Spool** tmp_data = (struct Spool**)calloc(pool->spool_max * 2, sizeof(void*));
-        1:  114:        if(!tmp_data)
-    #####:  115:            return 0;
-        1:  116:        memcpy(tmp_data, pool -> data, sizeof(void*) * pool -> spool_count);
-        -:  117:
-        1:  118:        free_candidate = pool -> data;
-        1:  119:        pool -> data = tmp_data;
-        1:  120:        pool -> spool_max *= 2;
-        -:  121:    }
-        -:  122:
-        1:  123:    size_t index = pool -> spool_count;
-        1:  124:    struct Spool* tmp = (struct Spool*)calloc(1, sizeof(struct Spool) + sizeof(struct Chunk) * pool -> spool_size);
-        1:  125:    if(!tmp)
-    #####:  126:        return (void*)-1;
-        -:  127:
-        1:  128:    pool -> data[index] = tmp;
-        1:  129:    pool -> spool_count++;
-        -:  130:
-        1:  131:    free(free_candidate); //Actually this can be a real problem if someone is handling previous pool -> data
-        -:  132:
-        1:  133:    return allocate_chunk(pool);
-        -:  134:}
-        -:  135:
-       80:  136:ssize_t deref_chunk(struct Pool* pool, struct Chunk* item) {
-       80:  137:    if(!pool || !item)
-    #####:  138:        return -1;
+        1:  113:    void* free_candidate = 0;
+        -:  114:
+        1:  115:    if(pool -> spool_count == pool -> spool_max) {
+        -:  116:
+        1:  117:        struct Spool** tmp_data = (struct Spool**)calloc(pool->spool_max * 2, sizeof(void*));
+        1:  118:        if(!tmp_data)
+    #####:  119:            return 0;
+        1:  120:        memcpy(tmp_data, pool -> data, sizeof(void*) * pool -> spool_count);
+        -:  121:
+        1:  122:        free_candidate = pool -> data;
+        1:  123:        pool -> data = tmp_data;
+        1:  124:        pool -> spool_max *= 2;
+        -:  125:    }
+        -:  126:
+        1:  127:    size_t index = pool -> spool_count;
+        1:  128:    struct Spool* tmp = (struct Spool*)calloc(1, sizeof(struct Spool) + sizeof(struct Chunk) * pool -> spool_size);
+        1:  129:    if(!tmp)
+    #####:  130:        return (void*)-1;
+        -:  131:
+        1:  132:    pool -> data[index] = tmp;
+        1:  133:    pool -> spool_count++;
+        -:  134:
+        1:  135:    free(free_candidate); //Actually this can be a real problem if someone is handling previous pool -> data
+        -:  136:
+        1:  137:    return allocate_chunk(pool, ptr, offset, size);
+        -:  138:}
         -:  139:
-       96:  140:    for(int i = 0; i < pool -> spool_count; i++) {
-       96:  141:        size_t bottom = (size_t)item - (size_t)(pool -> data[i] -> data);
-       96:  142:        size_t top = (size_t)(pool -> data[i] -> data + pool -> spool_size) - (size_t)item;
+       80:  140:ssize_t deref_chunk(struct Pool* pool, struct Chunk* item) {
+       80:  141:    if(!pool || !item)
+    #####:  142:        return -1;
         -:  143:
-       96:  144:        if(bottom <= pool -> spool_size * sizeof(struct Chunk) && top <= pool -> spool_size * sizeof(struct Chunk)) {
-       80:  145:            item -> refcount--;
-       80:  146:            if(!item -> refcount) {
-       80:  147:                pool -> data[i] -> count--;
-       80:  148:                item -> state = EMPTY;
-    #####:  149:            }   else {item -> state = READY;}
-        -:  150:
-       80:  151:            return 0;
-        -:  152:        }
-        -:  153:    }
-        -:  154:
-    #####:  155:    return -1;
-        -:  156:}
-        -:  157:
-        -:  158:
-        1:  159:int main(){ //Such test, wow
-        1:  160:    struct Pool* pool = init_pool();
-        -:  161:
-        1:  162:    printf("Passed init \n");
+       80:  144:    if(!item -> refcount) {
+    #####:  145:        item -> refcount--;
+    #####:  146:        return item -> refcount;
+        -:  147:    }
+        -:  148:
+       96:  149:    for(int i = 0; i < pool -> spool_count; i++) {
+       96:  150:        size_t bottom = (size_t)item - (size_t)(pool -> data[i] -> data);
+       96:  151:        size_t top = (size_t)(pool -> data[i] -> data + pool -> spool_size) - (size_t)item;
+        -:  152:
+       96:  153:        if(bottom <= pool -> spool_size * sizeof(struct Chunk) && top <= pool -> spool_size * sizeof(struct Chunk)) {
+       80:  154:            item -> state = BUSY;
+       80:  155:            item -> refcount--;
+        -:  156:
+       80:  157:            pool -> data[i] -> count--;
+       80:  158:            item -> state = EMPTY;
+        -:  159:
+       80:  160:            return 0;
+        -:  161:        }
+        -:  162:    }
         -:  163:
-        1:  164:    struct Chunk* array[256] = {0};
-       81:  165:    for(int i = 0; i < 80; i++) {
-       80:  166:        array[i] = allocate_chunk(pool);
-       80:  167:        if(array[i] == (void*)-1) {
-    #####:  168:            printf("WTF \n");
-    #####:  169:            exit(0);
-        -:  170:        }
-       80:  171:        array[i] -> state = READY;
-        -:  172:    }
-        -:  173:
-        1:  174:    printf("Passed allocation \n");
-        -:  175:
-       81:  176:    for(int i = 0; i < 80; i++) {
-       80:  177:        array[i] -> state = BUSY;
-       80:  178:        deref_chunk(pool, array[i]);
+    #####:  164:    return -1;
+        -:  165:}
+        -:  166:
+        1:  167:int main(){ //Such mini test, wow. Such works, so coverage
+        1:  168:    struct Pool* pool = init_pool();
+        -:  169:
+        1:  170:    printf("Passed init \n");
+        -:  171:
+        1:  172:    struct Chunk* array[256] = {0};
+       81:  173:    for(size_t i = 0; i < 80; i++) {
+       80:  174:        array[i] = allocate_chunk(pool, (void*)i, i, i);
+       80:  175:        if(array[i] == (void*)-1) {
+    #####:  176:            printf("WTF \n");
+    #####:  177:            exit(0);
+        -:  178:        }
         -:  179:    }
         -:  180:
-        1:  181:    printf("Passed dereference \n");
+        1:  181:    printf("Passed allocation \n");
         -:  182:
-       81:  183:    for(int i = 0; i < 80; i++) {
-       80:  184:        array[i] = allocate_chunk(pool);
-       80:  185:        array[i] -> state = READY;
-        -:  186:    }
-        -:  187:
-        1:  188:    printf("Passed 2nd allocation \n");
-        -:  189:
-        1:  190:    destruct_pool(pool);
-        -:  191:}
+       81:  183:    for(size_t i = 0; i < 80; i++) {
+       80:  184:        deref_chunk(pool, array[i]);
+        -:  185:    }
+        -:  186:
+        1:  187:    printf("Passed dereference \n");
+        -:  188:
+       81:  189:    for(size_t i = 0; i < 80; i++) {
+       80:  190:        array[i] = allocate_chunk(pool, (void*)(i + 80), i + 80, i+ 80);
+        -:  191:    }
+        -:  192:
+        1:  193:    printf("Passed 2nd allocation \n");
+        -:  194:
+        1:  195:    destruct_pool(pool);
+        -:  196:}

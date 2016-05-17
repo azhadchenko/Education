@@ -99,7 +99,7 @@ struct Chunk* allocate_chunk(struct Pool* pool, void* ptr, off_t offset, size_t 
     size_t index = pool -> spool_count;
     struct Spool* tmp = (struct Spool*)calloc(1, sizeof(struct Spool) + sizeof(struct Chunk) * pool -> spool_size);
     if(!tmp)
-        return (void*)-1;
+        return 0;
 
     pool -> data[index] = tmp;
     pool -> spool_count++;

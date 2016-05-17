@@ -15,7 +15,8 @@
 
 int main(int argc, char** argv) {
 
-    mf_open("test.c");
+    void* lol = mf_open("testfile.c");
+    mf_close(lol);
 
     return 0;
 }

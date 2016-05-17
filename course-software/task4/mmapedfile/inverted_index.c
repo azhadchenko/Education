@@ -161,7 +161,7 @@ ssize_t add_item(struct Inverted_index* ii, void* item, size_t start, size_t unt
     if(!ii)
         return -1;
 
-    for(size_t i = start; i <= until; i++) {
+    for(size_t i = start; i < until; i++) {
 
         struct Ii_element* tmp = allocate_element(ii -> manager, item, i - start);
         if(tmp == (void*)-1)

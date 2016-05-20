@@ -6,10 +6,10 @@ enum State_cm {
 
 struct Chunk {
     void* ptr;
-    off_t offset;
-    size_t size;
-    char state;
-    size_t refcount;
+    int offset;
+    int size;
+    int refcount;
+    char state; //Need to be tested if it is required to add 3 bytes
 };
 
 struct Spool {

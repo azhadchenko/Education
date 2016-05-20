@@ -19,8 +19,8 @@ struct Block {
 struct Ii_manager {
     struct Block** data;
 
-    unsigned char block_size;
     size_t block_count;
+    size_t block_size;
     size_t block_max;
 };
 

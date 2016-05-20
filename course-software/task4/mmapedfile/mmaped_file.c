@@ -89,58 +89,70 @@ int mf_close(void* tmp) {
     return 0;
 }
 
-void try_free_chunks(struct Mmaped_file* mf) {return};
+void try_free_chunks(struct Mmaped_file* mf) {return;}
 
-void* get_ptr(struct Mmaped_file* mf, off_t position, size_t length) {
+void* map_chunk(struct Mmaped_file* mf, off_t position, size_t length){
 
-    if(mf -> ii-> data[i] == 0) {
-
-BAD_CODE:
-        void* tmp  = 0;
-        position = (off_t) position * (off_t) mf -> chunk_size;
-        length = (length % mf -> chunk_size == 0) ? length : (length \ mf -> chunk_size + 1) * mf -> chunk_size;
+    void* tmp  = 0;
+    position = position / (off_t) mf -> chunk_size * mf -> chunk_size;
+    length = (length % mf -> chunk_size == 0) ? length : (length / mf -> chunk_size + 1) * mf -> chunk_size;
 
 #ifndef MAP_HUGETLB
 #define MAP_HUGETLB 0
 #endif // MAP_HUGETLB
 
-        for(int i = 0; i < 5; i++) {
-            tmp = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_HUGETLB | MAP_SHARED, mf -> fd, position);
-            if(tmp == (void*)-1)
-                try_free_chunks(mf);
-            if(i == 4)
-                return 0;
-        }
+    for(int i = 0; i < 5; i++) {
+        tmp = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_HUGETLB | MAP_SHARED, mf -> fd, position);
+        if(tmp == (void*)-1)
+            try_free_chunks(mf);
+        else
+            break;
 
-        struct Chunk* item = allocate_chunk(mf -> pool, tmp, position, length);
-        if(!item)
+        if(i == 4)
             return 0;
+    }
 
-        tmp = add_item(mf -> ii, item, position, position + length / mf -> chunk_size);
-        if(tmp != length / mf_chunk_size);
+    position = position / mf -> chunk_size;
+    length = length / mf -> chunk_size;
+
+    struct Chunk* item = allocate_chunk(mf -> pool, tmp, position, length);
+    if(!item)
+        return 0;
+
+    int add_res = add_item(mf -> ii, item, position, position + length);
+    if(add_res != length);
+        return 0;
+
+    return item -> ptr;
+}
+
+
+void* get_ptr(struct Mmaped_file* mf, off_t position, size_t length) {
+/*
+    if(mf -> ii-> data[position / mf -> chunk_size] == 0) {
+        void* tmp = map_chunk(mf, position, length);
+        if (tmp == 0)
             return 0;
-
-        return item -> ptr;
     }
 
     if(length <= mf -> chunk_size)
         return mf -> ii -> data[position] -> item;
 
-//Я в говне
 
     void* tmp = mf -> ii -> data[position];
     do {
         if(tmp -> pos_inside - ((struct Chunk*)tmp->item) -> offset - ((struct Chunk*)tmp->item) -> length  >= 0)
-            return tmp
-        goto BAD_CODE;
-    } while
+            return tmp;
+    } while (0);
+    */
+    return 0;
 }
 
 ssize_t mf_read(void* tmp, void* buf, size_t count, off_t offset) {
     struct Mmaped_file* mf = tmp;
 
     do {
-        size_t position = offset \ mf -> chunk_size;
+        size_t position = offset / mf -> chunk_size;
         size_t read_count = (position + 1) * mf -> chunk_size - offset;
         read_count = (count > read_count) ? read_count : count;
 
@@ -159,17 +171,18 @@ ssize_t mf_read(void* tmp, void* buf, size_t count, off_t offset) {
     return 0;
 }
 
+
+
 ssize_t mf_write(void* tmp, void* buf, size_t count, off_t offset) {
     struct Mmaped_file* mf = tmp;
 
     do {
-        size_t position = offset \ mf -> chunk_size;
-        void* source = get_ptr(mf, position);
+        void* source = get_ptr(mf, offset, count);
         if(!source)
             return -1;
 
         source += offset % mf -> chunk_size;
-        size_t write_count = (position + 1) * mf -> chunk_size - offset;
+        size_t write_count = mf -> chunk_size - offset % mf -> chunk_size;
         write_count = (count > write_count) ? write_count : count;
 
         offset += (offset % mf -> chunk_size == 0)? mf -> chunk_size : offset % mf -> chunk_size;
@@ -181,19 +194,19 @@ ssize_t mf_write(void* tmp, void* buf, size_t count, off_t offset) {
     return 0;
 }
 
-void *mf_map(void* tmp, off_t offset, size_t size, mf_mapmem_handle_t *mapmem_handle) {
+void *mf_map(void* tmp, off_t offset, size_t size, void** mapmem_handle) {
 
     struct Mmaped_file* mf = tmp;
-    struct Ii_element* element =
+    struct Ii_element* element;
 
     do {
 
 
 
 
-    } while()
+    } while(0);
 
-
+    return 0;
 }
 
 

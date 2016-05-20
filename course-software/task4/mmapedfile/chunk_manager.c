@@ -135,37 +135,3 @@ ssize_t deref_chunk(struct Pool* pool, struct Chunk* item) {
 
     return -1;
 }
-
-/*
-
-int main(){ //Such mini test, wow. Such works, so coverage
-    struct Pool* pool = init_pool();
-
-    printf("Passed init \n");
-
-    struct Chunk* array[256] = {0};
-    for(size_t i = 0; i < 80; i++) {
-        array[i] = allocate_chunk(pool, (void*)i, i, i);
-        if(array[i] == (void*)-1) {
-            printf("WTF \n");
-            exit(0);
-        }
-    }
-
-    printf("Passed allocation \n");
-
-    for(size_t i = 0; i < 80; i++) {
-        deref_chunk(pool, array[i]);
-    }
-
-    printf("Passed dereference \n");
-
-    for(size_t i = 0; i < 80; i++) {
-        array[i] = allocate_chunk(pool, (void*)(i + 80), i + 80, i+ 80);
-    }
-
-    printf("Passed 2nd allocation \n");
-
-    destruct_pool(pool);
-}
- */

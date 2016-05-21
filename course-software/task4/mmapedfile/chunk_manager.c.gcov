@@ -1,0 +1,142 @@
+        -:    0:Source:chunk_manager.c
+        -:    0:Graph:chunk_manager.gcno
+        -:    0:Data:chunk_manager.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <sys/mman.h>
+        -:    4:#include <sys/stat.h>
+        -:    5:#include <stdlib.h>
+        -:    6:#include <fcntl.h>
+        -:    7:#include <sys/types.h>
+        -:    8:#include <assert.h>
+        -:    9:#include <unistd.h>
+        -:   10:#include <errno.h>
+        -:   11:#include <string.h>
+        -:   12:
+        -:   13:#include "chunk_manager.h"
+        -:   14:
+        1:   15:struct Pool* init_pool(){
+        -:   16:
+        1:   17:    size_t spool_size = 64;
+        -:   18:
+        -:   19:    if(sizeof(void*) == 4) {
+        -:   20:        spool_size = 128;
+        -:   21:    }
+        -:   22:
+        1:   23:    size_t size = spool_size * sizeof(struct Chunk) + sizeof(struct Spool) + sizeof(struct Pool);
+        1:   24:    struct Pool* pool = (struct Pool*)calloc(1, size);
+        1:   25:    if(!pool)
+    #####:   26:        return 0;
+        -:   27:
+        -:   28:
+        1:   29:    pool -> data = (struct Spool**)calloc(sizeof(void*), INIT_SPOOL_COUNT);
+        1:   30:    if(!pool -> data) {
+    #####:   31:        free(pool);
+    #####:   32:        return 0;
+        -:   33:    }
+        -:   34:
+        1:   35:    pool -> spool_size = spool_size;
+        1:   36:    pool -> data[pool -> spool_count++] = (struct Spool*)((void*)pool + sizeof(struct Pool));
+        1:   37:    pool -> spool_max = INIT_SPOOL_COUNT;
+        -:   38:
+        1:   39:    return pool;
+        -:   40:}
+        -:   41:
+        1:   42:ssize_t destruct_pool(struct Pool* pool) {
+        1:   43:    if(!pool)
+    #####:   44:        return 0;
+        -:   45:
+        2:   46:    for(int i = 1; i < pool -> spool_count; i++)
+        1:   47:        free(pool -> data[i]);
+        -:   48:
+        1:   49:    free(pool);
+        -:   50:
+        1:   51:    return 0;
+        -:   52:}
+        -:   53:
+      161:   54:struct Chunk* allocate_chunk(struct Pool* pool, void* ptr, off_t offset, size_t size){
+      161:   55:    if(!pool)
+    #####:   56:        return 0;
+        -:   57:
+      194:   58:    for(int i = 0; i < pool -> spool_count; i++) {
+        -:   59:
+      193:   60:        if(pool -> data[i] -> count == pool -> spool_size)
+       33:   61:            continue;
+        -:   62:
+      160:   63:        struct Chunk* tmp = pool -> data[i] -> data;
+        -:   64:
+     4432:   65:        for(int j = 0; j < pool -> spool_size; j++) {
+     4432:   66:            if(tmp[j].state == EMPTYCM) {
+      160:   67:                tmp[j].state = READYCM;
+      160:   68:                tmp[j].refcount++;
+        -:   69:
+      160:   70:                tmp[j].ptr = ptr;
+      160:   71:                tmp[j].offset = offset;
+      160:   72:                tmp[j].size = size;
+        -:   73:
+      160:   74:                pool -> data[i] -> count++;
+        -:   75:
+        -:   76:
+      160:   77:                return &tmp[j];
+        -:   78:            }
+        -:   79:
+        -:   80:        }
+        -:   81:    }
+        -:   82:
+        -:   83:    //actions if all spools are full
+        -:   84:
+        1:   85:    void* free_candidate = 0;
+        -:   86:
+        1:   87:    if(pool -> spool_count == pool -> spool_max) {
+        -:   88:
+    #####:   89:        struct Spool** tmp_data = (struct Spool**)calloc(pool->spool_max * 2, sizeof(void*));
+    #####:   90:        if(!tmp_data)
+    #####:   91:            return 0;
+    #####:   92:        memcpy(tmp_data, pool -> data, sizeof(void*) * pool -> spool_count);
+        -:   93:
+    #####:   94:        free_candidate = pool -> data;
+    #####:   95:        pool -> data = tmp_data;
+    #####:   96:        pool -> spool_max *= 2;
+        -:   97:    }
+        -:   98:
+        1:   99:    size_t index = pool -> spool_count;
+        1:  100:    struct Spool* tmp = (struct Spool*)calloc(1, sizeof(struct Spool) + sizeof(struct Chunk) * pool -> spool_size);
+        1:  101:    if(!tmp)
+    #####:  102:        return 0;
+        -:  103:
+        1:  104:    pool -> data[index] = tmp;
+        1:  105:    pool -> spool_count++;
+        -:  106:
+        1:  107:    free(free_candidate); //Actually this can be a real problem if someone is handling previous pool -> data
+        -:  108:
+        1:  109:    return allocate_chunk(pool, ptr, offset, size);
+        -:  110:}
+        -:  111:
+       80:  112:ssize_t deref_chunk(struct Pool* pool, struct Chunk* item) {
+       80:  113:    if(!pool || !item)
+    #####:  114:        return -1;
+        -:  115:
+       80:  116:    if(!item -> refcount) {
+    #####:  117:        item -> refcount--;
+    #####:  118:        return item -> refcount;
+        -:  119:    }
+        -:  120:
+       96:  121:    for(int i = 0; i < pool -> spool_count; i++) {
+       96:  122:        size_t bottom = (size_t)item - (size_t)(pool -> data[i] -> data);
+       96:  123:        size_t top = (size_t)(pool -> data[i] -> data + pool -> spool_size) - (size_t)item;
+        -:  124:
+       96:  125:        if(bottom <= pool -> spool_size * sizeof(struct Chunk) && top <= pool -> spool_size * sizeof(struct Chunk)) {
+       80:  126:            item -> state = BUSYCM;
+       80:  127:            item -> refcount--;
+        -:  128:
+       80:  129:            pool -> data[i] -> count--;
+       80:  130:            item -> state = EMPTYCM;
+        -:  131:
+       80:  132:            return 0;
+        -:  133:        }
+        -:  134:    }
+        -:  135:
+    #####:  136:    return -1;
+        -:  137:}

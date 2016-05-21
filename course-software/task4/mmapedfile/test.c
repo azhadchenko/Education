@@ -82,14 +82,37 @@ void cm_unit_test() {
     destruct_pool(pool);
 }
 
+#define SIZE 1024*1024*16
+
+void mf_unit_test() {
+    char* buf = (char*)calloc(1, SIZE);
+
+    void* lol = mf_open("testfile");
+    assert(lol);
+
+    printf("MF:Open complete\n");
+
+    mf_read(lol, buf, SIZE, 0);
+
+    printf("MF:Read complete\n");
+
+    mf_write(lol, buf, SIZE, 0);
+
+    printf("MF:Write complete\n");
+
+    mf_close(lol);
+
+    printf("MF:Close complete\n");
+}
+
 
 int main(int argc, char** argv) {
 
-    void* lol = mf_open("testfile.c");
-    mf_close(lol);
-
     ii_unit_test();
     cm_unit_test();
+    mf_unit_test();
+
+
 
     return 0;
 }

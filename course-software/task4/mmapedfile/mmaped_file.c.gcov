@@ -1,0 +1,228 @@
+        -:    0:Source:mmaped_file.c
+        -:    0:Graph:mmaped_file.gcno
+        -:    0:Data:mmaped_file.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <sys/mman.h>
+        -:    4:#include <sys/stat.h>
+        -:    5:#include <stdlib.h>
+        -:    6:#include <fcntl.h>
+        -:    7:#include <sys/types.h>
+        -:    8:#include <assert.h>
+        -:    9:#include <unistd.h>
+        -:   10:#include <errno.h>
+        -:   11:#include <string.h>
+        -:   12:
+        -:   13:#include "chunk_manager.h"
+        -:   14:#include "inverted_index.h"
+        -:   15:
+        -:   16:struct Mmaped_file{
+        -:   17:    size_t status;
+        -:   18:    struct Pool* pool;
+        -:   19:    struct Inverted_index* ii;
+        -:   20:    size_t chunk_size;
+        -:   21:    size_t chunk_count;
+        -:   22:    int fd;
+        -:   23:    off_t size;
+        -:   24:};
+        -:   25:
+        -:   26:#define DEFAULT_CHUNK_SIZE 1024*1024*16
+        -:   27:
+        1:   28:void* mf_open(const char* pathname) {
+        1:   29:    if(!pathname)
+    #####:   30:        return 0;
+        -:   31:
+        1:   32:    int fd = open(pathname, O_RDWR);
+        1:   33:    if(fd == -1)
+    #####:   34:        return 0;
+        -:   35:
+        1:   36:    struct Mmaped_file* mf = (struct Mmaped_file*)calloc(1, sizeof(struct Mmaped_file));
+        1:   37:    if(!mf) {
+    #####:   38:        close(fd);
+    #####:   39:        return 0;
+        -:   40:    }
+        -:   41:
+        1:   42:    mf -> fd = fd;
+        -:   43:
+        1:   44:    mf -> pool = init_pool();
+        1:   45:    if(!mf -> pool) {
+    #####:   46:        close(fd);
+    #####:   47:        free(mf);
+    #####:   48:        return 0;
+        -:   49:    }
+        -:   50:
+        1:   51:    struct stat finfo = {0};
+        1:   52:    int err = fstat(fd, &finfo);
+        1:   53:    if(err == -1)
+    #####:   54:        return 0;
+        -:   55:
+        1:   56:    size_t chunk_size = DEFAULT_CHUNK_SIZE;
+        1:   57:    size_t chunk_count = finfo.st_size / chunk_size;
+        2:   58:    while(chunk_count > 1000) {
+    #####:   59:        chunk_size *= 2;
+    #####:   60:        chunk_count = finfo.st_size / chunk_size;
+        -:   61:    }
+        -:   62:
+        1:   63:    mf -> ii = init_ii(chunk_count);
+        1:   64:    if(!mf -> ii) {
+    #####:   65:        close(fd);
+    #####:   66:        destruct_pool(mf -> pool);
+    #####:   67:        free(mf);
+    #####:   68:        return 0;
+        -:   69:    }
+        -:   70:
+        1:   71:    mf -> chunk_size = chunk_size;
+        1:   72:    mf -> chunk_count = chunk_count;
+        1:   73:    mf -> size = finfo.st_size;
+        -:   74:
+        1:   75:    return mf;
+        -:   76:}
+        -:   77:
+        1:   78:int mf_close(void* tmp) {
+        1:   79:    struct Mmaped_file* mf = tmp;
+        -:   80:
+        1:   81:    if(!tmp)
+    #####:   82:        return -1;
+        -:   83:
+        1:   84:    close(mf -> fd);
+        1:   85:    destruct_ii(mf -> ii);
+        1:   86:    destruct_pool(mf -> pool);
+        -:   87:
+        1:   88:    free(mf);
+        -:   89:
+        1:   90:    return 0;
+        -:   91:}
+        -:   92:
+    #####:   93:void try_free_chunks(struct Mmaped_file* mf) {return;}
+        -:   94:
+        -:   95:#define CALC_SIZE_IN_CHUNKS(length, chunk_size) ( (length % chunk_size == 0) ? length : (length /  chunk_size + 1) * chunk_size )
+        -:   96:
+        -:   97:
+        1:   98:void* map_chunk(struct Mmaped_file* mf, off_t position, size_t length) {
+        -:   99:
+        1:  100:    void* tmp  = 0;
+        1:  101:    position = position / (off_t) mf -> chunk_size * mf -> chunk_size;
+        1:  102:    length = CALC_SIZE_IN_CHUNKS(length, mf -> chunk_size);
+        -:  103:
+        -:  104:#ifndef MAP_HUGETLB
+        -:  105:#define MAP_HUGETLB 0
+        -:  106:#endif // MAP_HUGETLB
+        -:  107:
+        1:  108:    for(int i = 0; i < 5; i++) {
+        1:  109:        tmp = mmap(NULL, length, PROT_READ | PROT_WRITE,  MAP_SHARED, mf -> fd, position);
+        1:  110:        if(tmp == (void*)-1)
+    #####:  111:            try_free_chunks(mf);
+        -:  112:        else
+        1:  113:            break;
+        -:  114:
+    #####:  115:        if(i == 4)
+    #####:  116:            return 0;
+        -:  117:    }
+        -:  118:
+        1:  119:    position = position / mf -> chunk_size;
+        1:  120:    length = length / mf -> chunk_size;
+        -:  121:
+        1:  122:    struct Chunk* item = allocate_chunk(mf -> pool, tmp, position, length);
+        1:  123:    if(!item)
+    #####:  124:        return 0;
+        -:  125:
+        1:  126:    int add_res = add_item(mf -> ii, item, position, position + length);
+        1:  127:    if(add_res != length)
+    #####:  128:        return 0;
+        -:  129:
+        1:  130:    return item -> ptr;
+        -:  131:}
+        -:  132:
+        -:  133:
+        2:  134:void* get_ptr(struct Mmaped_file* mf, off_t position, size_t length) {
+        2:  135:    if(!mf)
+    #####:  136:        return 0;
+        -:  137:
+        2:  138:    struct Ii_element* item = mf -> ii -> data[position / mf -> chunk_size];
+        -:  139:
+        2:  140:    if(!item)
+        1:  141:        return map_chunk(mf, position, length);
+        -:  142:
+        -:  143:
+        1:  144:    struct Chunk* curr_chunk = (struct Chunk*)item->item;
+        -:  145:
+        2:  146:    while(curr_chunk -> offset + curr_chunk -> size > position / mf -> chunk_size + CALC_SIZE_IN_CHUNKS(length, mf -> chunk_size)) {
+    #####:  147:        if(!item->next)
+    #####:  148:            return map_chunk(mf, position, length);
+        -:  149:
+    #####:  150:        item = item -> next;
+    #####:  151:        curr_chunk = (struct Chunk*)item->item;
+        -:  152:    };
+        -:  153:
+        1:  154:    return curr_chunk -> ptr;
+        -:  155:
+        -:  156:    return 0;
+        -:  157:}
+        -:  158:
+        1:  159:ssize_t mf_read(void* tmp, void* buf, size_t count, off_t offset) {
+        1:  160:    struct Mmaped_file* mf = tmp;
+        -:  161:
+        -:  162:    do {
+        -:  163:
+        1:  164:        size_t read_count = mf -> chunk_size - offset % mf -> chunk_size;
+        1:  165:        read_count = (count > read_count) ? read_count : count;
+        -:  166:
+        1:  167:        void* source = get_ptr(mf, offset, read_count);
+        1:  168:        if(!source)
+    #####:  169:            return -1;
+        -:  170:
+        1:  171:        source += offset % mf -> chunk_size;
+        1:  172:        offset += (offset % mf -> chunk_size == 0)? mf -> chunk_size : offset % mf -> chunk_size;
+        1:  173:        count -= read_count;
+        -:  174:
+        1:  175:        memcpy(buf, source, read_count);
+        1:  176:    } while(count != 0);
+        -:  177:
+        1:  178:    return 0;
+        -:  179:}
+        -:  180:
+        -:  181:
+        -:  182:
+        1:  183:ssize_t mf_write(void* tmp, void* buf, size_t count, off_t offset) {
+        1:  184:    struct Mmaped_file* mf = tmp;
+        -:  185:
+        -:  186:    do {
+        -:  187:
+        1:  188:        size_t write_count = mf -> chunk_size - offset % mf -> chunk_size;
+        1:  189:        write_count = (count > write_count) ? write_count : count;
+        -:  190:
+        1:  191:        void* source = get_ptr(mf, offset, count);
+        1:  192:        if(!source)
+    #####:  193:            return -1;
+        -:  194:
+        1:  195:        source += offset % mf -> chunk_size;
+        1:  196:        offset += (offset % mf -> chunk_size == 0)? mf -> chunk_size : offset % mf -> chunk_size;
+        1:  197:        count -= write_count;
+        -:  198:
+        1:  199:        memcpy(source, buf, write_count);
+        1:  200:    } while(count != 0);
+        -:  201:
+        1:  202:    return 0;
+        -:  203:}
+        -:  204:
+    #####:  205:void *mf_map(void* tmp, off_t offset, size_t size, void** mapmem_handle) {
+        -:  206:
+    #####:  207:    struct Mmaped_file* mf = tmp;
+        -:  208:    struct Ii_element* element;
+        -:  209:
+        -:  210:    do {
+        -:  211:
+        -:  212:
+        -:  213:
+        -:  214:
+        -:  215:    } while(0);
+        -:  216:
+    #####:  217:    return 0;
+        -:  218:}
+        -:  219:
+        -:  220:
+    #####:  221:off_t mf_file_size(void* mf) {
+    #####:  222:    return (((struct Mmaped_file*)mf)->size);
+        -:  223:}

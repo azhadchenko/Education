@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -std=gnu99
+CFLAGS = -Wall -std=gnu99 -fprofile-arcs -ftest-coverage
 STATICLIBS =  mmaped_file.c inverted_index.c chunk_manager.c
 EXECUTABLE = test.c
 

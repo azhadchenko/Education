@@ -106,6 +106,11 @@ void* map_chunk(struct Mmaped_file* mf, off_t position, size_t length) {
 #endif // MAP_HUGETLB
 
     for(int i = 0; i < 5; i++) {
+
+
+//        tmp = mmap(NULL, length, PROT_READ | PROT_WRITE,  MAP_SHARED | MAP_HUGETLB | MAP_ANONYMOUS, mf -> fd, position);
+//        mmap(tmp, length, PROT_READ | PROT_WRITE,  MAP_SHARED | MAP_FIXED, mf -> fd, position);
+
         tmp = mmap(NULL, length, PROT_READ | PROT_WRITE,  MAP_SHARED, mf -> fd, position);
         if(tmp == (void*)-1)
             try_free_chunks(mf);
@@ -131,7 +136,7 @@ void* map_chunk(struct Mmaped_file* mf, off_t position, size_t length) {
 }
 
 
-void* get_ptr(struct Mmaped_file* mf, off_t position, size_t length) { //actually somewhere here must be controlled refcount
+void* get_ptr(struct Mmaped_file* mf, off_t position, size_t length, void** chunk_addr) { //actually somewhere here must be controlled refcount
     if(!mf)
         return 0;
 
@@ -151,9 +156,12 @@ void* get_ptr(struct Mmaped_file* mf, off_t position, size_t length) { //actuall
         curr_chunk = (struct Chunk*)item->item;
     };
 
-    return curr_chunk -> ptr;
+    if(chunk_addr) {
+        curr_chunk ->refcount++;
+        *chunk_addr = curr_chunk;
+    }
 
-    return 0;
+    return curr_chunk -> ptr;
 }
 
 ssize_t mf_read(void* tmp, void* buf, size_t count, off_t offset) {
@@ -164,7 +172,7 @@ ssize_t mf_read(void* tmp, void* buf, size_t count, off_t offset) {
         size_t read_count = mf -> chunk_size - offset % mf -> chunk_size;
         read_count = (count > read_count) ? read_count : count;
 
-        void* source = get_ptr(mf, offset, read_count);
+        void* source = get_ptr(mf, offset, read_count, 0);
         if(!source)
             return -1;
 
@@ -188,7 +196,7 @@ ssize_t mf_write(void* tmp, void* buf, size_t count, off_t offset) {
         size_t write_count = mf -> chunk_size - offset % mf -> chunk_size;
         write_count = (count > write_count) ? write_count : count;
 
-        void* source = get_ptr(mf, offset, count);
+        void* source = get_ptr(mf, offset, count, 0);
         if(!source)
             return -1;
 
@@ -204,16 +212,10 @@ ssize_t mf_write(void* tmp, void* buf, size_t count, off_t offset) {
 
 void *mf_map(void* tmp, off_t offset, size_t size, void** mapmem_handle) {
 
-    struct Mmaped_file* mf = tmp;
-    struct Ii_element* element;
+    return get_ptr(tmp, offset, size, mapmem_handle);
+}
 
-    do {
-
-
-
-
-    } while(0);
-
+int mf_unmap(void* mf, void** mapmem_handle) {
     return 0;
 }
 

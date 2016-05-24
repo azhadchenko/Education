@@ -1,32 +1,32 @@
 execve("./a.out", ["./a.out"], [/* 45 vars */]) = 0
-brk(0)                                  = 0x1785000
+brk(0)                                  = 0x237b000
 access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
-mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcbe2690000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7c33c6d000
 access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
 open("/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
 fstat(3, {st_mode=S_IFREG|0644, st_size=138126, ...}) = 0
-mmap(NULL, 138126, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fcbe266e000
+mmap(NULL, 138126, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f7c33c4b000
 close(3)                                = 0
 access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
 open("/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
 read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0P\34\2\0\0\0\0\0"..., 832) = 832
 fstat(3, {st_mode=S_IFREG|0755, st_size=1738176, ...}) = 0
-mmap(NULL, 3844640, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fcbe20c7000
-mprotect(0x7fcbe2269000, 2093056, PROT_NONE) = 0
-mmap(0x7fcbe2468000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1a1000) = 0x7fcbe2468000
-mmap(0x7fcbe246e000, 14880, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7fcbe246e000
+mmap(NULL, 3844640, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f7c336a4000
+mprotect(0x7f7c33846000, 2093056, PROT_NONE) = 0
+mmap(0x7f7c33a45000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1a1000) = 0x7f7c33a45000
+mmap(0x7f7c33a4b000, 14880, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f7c33a4b000
 close(3)                                = 0
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcbe266d000
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcbe266c000
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcbe266b000
-arch_prctl(ARCH_SET_FS, 0x7fcbe266c700) = 0
-mprotect(0x7fcbe2468000, 16384, PROT_READ) = 0
-mprotect(0x7fcbe2692000, 4096, PROT_READ) = 0
-munmap(0x7fcbe266e000, 138126)          = 0
-brk(0)                                  = 0x1785000
-brk(0x17a6000)                          = 0x17a6000
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7c33c4a000
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7c33c49000
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7c33c48000
+arch_prctl(ARCH_SET_FS, 0x7f7c33c49700) = 0
+mprotect(0x7f7c33a45000, 16384, PROT_READ) = 0
+mprotect(0x7f7c33c6f000, 4096, PROT_READ) = 0
+munmap(0x7f7c33c4b000, 138126)          = 0
+brk(0)                                  = 0x237b000
+brk(0x239c000)                          = 0x239c000
 fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 2), ...}) = 0
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcbe268f000
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7c33c6c000
 write(1, "II:Init complete\n", 17)      = 17
 fsync(1)                                = -1 EINVAL (Invalid argument)
 write(1, "II:Add complete\n", 16)       = 16
@@ -39,67 +39,67 @@ write(1, "CM:Passed init \n", 16)       = 16
 write(1, "CM:Passed allocation \n", 22) = 22
 write(1, "CM:Passed dereference \n", 23) = 23
 write(1, "CM:Passed 2nd allocation \n", 26) = 26
-mmap(NULL, 16781312, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcbe10c6000
+mmap(NULL, 16781312, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7c326a3000
 open("testfile", O_RDWR)                = 3
 fstat(3, {st_mode=S_IFREG|0644, st_size=16777216, ...}) = 0
 write(1, "MF:Open complete\n", 17)      = 17
-mmap(NULL, 16777216, PROT_READ|PROT_WRITE, MAP_SHARED, 3, 0) = 0x7fcbe00c6000
+mmap(NULL, 16777216, PROT_READ|PROT_WRITE, MAP_SHARED, 3, 0) = 0x7f7c316a3000
 write(1, "MF:Read complete\n", 17)      = 17
 write(1, "MF:Write complete\n", 18)     = 18
 close(3)                                = 0
 write(1, "MF:Close complete\n", 18)     = 18
-getpid()                                = 9869
+getpid()                                = 9919
 open("/home/andrew/Documents/git/Education/course-software/task4/mmapedfile/chunk_manager.gcda", O_RDWR|O_CREAT, 0666) = 3
 fcntl(3, F_SETLKW, {type=F_WRLCK, whence=SEEK_SET, start=0, len=0}) = 0
 fcntl(3, F_GETFL)                       = 0x8002 (flags O_RDWR|O_LARGEFILE)
-fstat(3, {st_mode=S_IFREG|0644, st_size=748, ...}) = 0
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcbe268e000
+fstat(3, {st_mode=S_IFREG|0644, st_size=808, ...}) = 0
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7c33c6b000
 lseek(3, 0, SEEK_CUR)                   = 0
-fstat(3, {st_mode=S_IFREG|0644, st_size=748, ...}) = 0
-munmap(0x7fcbe268e000, 4096)            = 0
-read(3, "adcg*904f\245i\322\0\0\0\243\33\0\0\0\361\314\267\33\254\0\0\0\1\0\0\0"..., 4096) = 748
-read(3, "", 3348)                       = 0
+fstat(3, {st_mode=S_IFREG|0644, st_size=808, ...}) = 0
+munmap(0x7f7c33c6b000, 4096)            = 0
+read(3, "adcg*904=\"\364\337\0\0\0\243p\0\0\0\316\345\330\377\253\0\0\0\1\0\0\0"..., 4096) = 808
+read(3, "", 3288)                       = 0
 lseek(3, 0, SEEK_SET)                   = 0
-write(3, "adcg*904\330\237j\322\0\0\0\243p\0\0\0\0361\252o\252\0\0\0\1\0\0\0"..., 768) = 768
+write(3, "adcg*904\35\277\366\337\0\0\0\243p\0\0\0\267!\320\224\252\0\0\0\1\0\0\0"..., 768) = 768
 close(3)                                = 0
 open("/home/andrew/Documents/git/Education/course-software/task4/mmapedfile/inverted_index.gcda", O_RDWR|O_CREAT, 0666) = 3
 fcntl(3, F_SETLKW, {type=F_WRLCK, whence=SEEK_SET, start=0, len=0}) = 0
 fcntl(3, F_GETFL)                       = 0x8002 (flags O_RDWR|O_LARGEFILE)
-fstat(3, {st_mode=S_IFREG|0644, st_size=1036, ...}) = 0
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcbe268e000
+fstat(3, {st_mode=S_IFREG|0644, st_size=1096, ...}) = 0
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7c33c6b000
 lseek(3, 0, SEEK_CUR)                   = 0
-fstat(3, {st_mode=S_IFREG|0644, st_size=1036, ...}) = 0
-munmap(0x7fcbe268e000, 4096)            = 0
-read(3, "adcg*904\370\244i\322\0\0\0\243\33\0\0\0\361\314\267\33\254\0\0\0\1\0\0\0"..., 4096) = 1036
-read(3, "", 3060)                       = 0
+fstat(3, {st_mode=S_IFREG|0644, st_size=1096, ...}) = 0
+munmap(0x7f7c33c6b000, 4096)            = 0
+read(3, "adcg*904\357!\364\337\0\0\0\243p\0\0\0\316\345\330\377\253\0\0\0\1\0\0\0"..., 4096) = 1096
+read(3, "", 3000)                       = 0
 lseek(3, 0, SEEK_SET)                   = 0
-write(3, "adcg*904k\237j\322\0\0\0\243p\0\0\0\0361\252o\252\0\0\0\1\0\0\0"..., 1056) = 1056
+write(3, "adcg*904\264\276\366\337\0\0\0\243p\0\0\0\267!\320\224\252\0\0\0\1\0\0\0"..., 1056) = 1056
 close(3)                                = 0
 open("/home/andrew/Documents/git/Education/course-software/task4/mmapedfile/mmaped_file.gcda", O_RDWR|O_CREAT, 0666) = 3
 fcntl(3, F_SETLKW, {type=F_WRLCK, whence=SEEK_SET, start=0, len=0}) = 0
 fcntl(3, F_GETFL)                       = 0x8002 (flags O_RDWR|O_LARGEFILE)
-fstat(3, {st_mode=S_IFREG|0644, st_size=1064, ...}) = 0
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcbe268e000
+fstat(3, {st_mode=S_IFREG|0644, st_size=1188, ...}) = 0
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7c33c6b000
 lseek(3, 0, SEEK_CUR)                   = 0
-fstat(3, {st_mode=S_IFREG|0644, st_size=1064, ...}) = 0
-munmap(0x7fcbe268e000, 4096)            = 0
-read(3, "adcg*904\215\244i\322\0\0\0\243\33\0\0\0\361\314\267\33\254\0\0\0\1\0\0\0"..., 4096) = 1064
-read(3, "", 3032)                       = 0
+fstat(3, {st_mode=S_IFREG|0644, st_size=1188, ...}) = 0
+munmap(0x7f7c33c6b000, 4096)            = 0
+read(3, "adcg*904g!\364\337\0\0\0\243p\0\0\0\316\345\330\377\253\0\0\0\1\0\0\0"..., 4096) = 1188
+read(3, "", 2908)                       = 0
 lseek(3, 0, SEEK_SET)                   = 0
-write(3, "adcg*904\7\237j\322\0\0\0\243p\0\0\0\0361\252o\252\0\0\0\1\0\0\0"..., 1148) = 1148
+write(3, "adcg*904[\276\366\337\0\0\0\243p\0\0\0\267!\320\224\252\0\0\0\1\0\0\0"..., 1148) = 1148
 close(3)                                = 0
 open("/home/andrew/Documents/git/Education/course-software/task4/mmapedfile/test.gcda", O_RDWR|O_CREAT, 0666) = 3
 fcntl(3, F_SETLKW, {type=F_WRLCK, whence=SEEK_SET, start=0, len=0}) = 0
 fcntl(3, F_GETFL)                       = 0x8002 (flags O_RDWR|O_LARGEFILE)
-fstat(3, {st_mode=S_IFREG|0644, st_size=856, ...}) = 0
-mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcbe268e000
+fstat(3, {st_mode=S_IFREG|0644, st_size=1016, ...}) = 0
+mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f7c33c6b000
 lseek(3, 0, SEEK_CUR)                   = 0
-fstat(3, {st_mode=S_IFREG|0644, st_size=856, ...}) = 0
-munmap(0x7fcbe268e000, 4096)            = 0
-read(3, "adcg*904\307\245i\322\0\0\0\243\33\0\0\0\361\314\267\33\254\0\0\0\1\0\0\0"..., 4096) = 856
-read(3, "", 3240)                       = 0
+fstat(3, {st_mode=S_IFREG|0644, st_size=1016, ...}) = 0
+munmap(0x7f7c33c6b000, 4096)            = 0
+read(3, "adcg*904\211\"\364\337\0\0\0\243p\0\0\0\316\345\330\377\253\0\0\0\1\0\0\0"..., 4096) = 1016
+read(3, "", 3080)                       = 0
 lseek(3, 0, SEEK_SET)                   = 0
-write(3, "adcg*9048\240j\322\0\0\0\243p\0\0\0\0361\252o\252\0\0\0\1\0\0\0"..., 976) = 976
+write(3, "adcg*904\223\277\366\337\0\0\0\243p\0\0\0\267!\320\224\252\0\0\0\1\0\0\0"..., 976) = 976
 close(3)                                = 0
 exit_group(0)                           = ?
 +++ exited with 0 +++

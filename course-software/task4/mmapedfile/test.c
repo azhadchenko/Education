@@ -112,7 +112,5 @@ int main(int argc, char** argv) {
     cm_unit_test();
     mf_unit_test();
 
-
-
     return 0;
 }
